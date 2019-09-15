@@ -7,7 +7,26 @@ require 'forwardable'
 
 module Kiba
   module Tanmer
-    class Job
+    module Job
+      def self.included(base)
+        base.extend ClassMethods
+      end
+
+      module ClassMethods
+        def define_etl(source_as_string = nil, source_file = nil, &source_as_block)
+          if source_as_string
+            @defined_etl_block = proc { instance_eval(*[source_as_string, source_file].compact) }
+          else
+            @defined_etl_block = source_as_block
+          end
+          self
+        end
+
+        def defined_etl_block
+          @defined_etl_block
+        end
+      end
+
       extend Forwardable
 
       attr_reader :context, :control
@@ -23,20 +42,12 @@ module Kiba
         context.config :kiba, runner: Kiba::StreamingRunner
         context.send :extend, Kiba::Common::DSLExtensions::Logger
         context.send :extend, Kiba::Common::DSLExtensions::ShowMe
+        context.instance_eval(&self.class.defined_etl_block)
+        self
       end
 
       def checkpoint(key)
         checkpoints.fetch(key)
-      end
-
-      def define(source_as_string = nil, source_file = nil, &source_as_block)
-        if source_as_string
-          # this somewhat weird construct allows to remove a nil source_file
-          context.instance_eval(*[source_as_string, source_file].compact)
-        else
-          context.instance_eval(&source_as_block)
-        end
-        self
       end
 
       def run

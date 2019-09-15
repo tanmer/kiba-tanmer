@@ -4,9 +4,13 @@ module Kiba
   module Tanmer
     module Parser
       def parse(*args, &block)
-        Job.new.tap do |job|
-          job.define(*args, &block)
-        end
+        Class.new.tap do |klass|
+          klass.define_singleton_method :name do
+            '<Anonymous Job>'
+          end
+          klass.send :include, Job
+          klass.define_etl(*args, &block)
+        end.new
       end
     end
   end

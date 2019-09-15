@@ -1,8 +1,13 @@
 # Kiba::Tanmer
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/kiba/tanmer`. To experiment with that code, run `bin/console` for an interactive prompt.
+This is a gem as extensions of Kiba for Tanmer Inc.
 
-TODO: Delete this and the text above, and describe your gem
+## Features
+
+- Registry for making short-cuts of Class with Symbol.
+- Checkpoint for storing current data to Hash store.
+- Support passing block to source and destination.
+- Add Job class.
 
 ## Installation
 
@@ -22,7 +27,43 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+**Define job with block:**
+
+```ruby
+job = Kiba::Tanmer.parse do
+  source { 1..5 }
+  transform { |x| x * 2 }
+  destination { |x| puts x }
+end
+job.run # => puts 2 4 5 8 10
+```
+
+**Define job with source code:**
+
+```ruby
+code = <<-CODE
+source { 1..5 }
+  transform { |x| x * 2 }
+  destination { |x| puts x }
+CODE
+job = Kiba::Tanmer.parse(code)
+job.run # => puts 2 4 5 8 10
+```
+
+**Define job in class:**
+
+```ruby
+class MyJob
+  include Kiba::Tanmer::Job
+  define_etl do
+    source { 1..5 }
+    transform { |x| x * 2 }
+    destination { |x| puts x }
+  end
+end
+MyJob.new.run # => puts 2 4 5 8 10
+
+```
 
 ## Development
 

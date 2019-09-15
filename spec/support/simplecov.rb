@@ -1,4 +1,6 @@
 # frozen_string_literal: true
 
-require 'simplecov'
-SimpleCov.start
+if ENV['COVERAGE']
+  require 'simplecov'
+  SimpleCov.start
+end
