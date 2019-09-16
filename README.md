@@ -65,6 +65,97 @@ MyJob.new.run # => puts 2 4 5 8 10
 
 ```
 
+**Register mapping in class:**
+
+```ruby
+class RawSource
+  def initialize(raw)
+    @raw = raw
+  end
+
+  def each
+    yield @raw
+  end
+end
+
+class MultiplyTransform
+  def initialize(x)
+    @x = x
+  end
+
+  def process(row)
+    yield @x * row
+  end
+end
+
+class StdoutDestination
+  def write(row)
+    puts row
+  end
+end
+
+class MyJob
+  include Kiba::Tanmer::Job
+  register_sources raw: RawSource
+  register_transforms multiply: MultiplyTransform
+  register_destinations stdout: StdoutDestination
+
+  define_etl do
+    source :raw, 10
+    transform :multiply, 2
+    destination :stdout
+  end
+end
+MyJob.new.run # => puts 20
+
+```
+
+**Register mapping in instance:**
+
+```ruby
+class RawSource
+  def initialize(raw)
+    @raw = raw
+  end
+
+  def each
+    yield @raw
+  end
+end
+
+class MultiplyTransform
+  def initialize(x)
+    @x = x
+  end
+
+  def process(row)
+    yield @x * row
+  end
+end
+
+class StdoutDestination
+  def write(row)
+    puts row
+  end
+end
+
+class MyJob
+  include Kiba::Tanmer::Job
+
+  define_etl do
+    register_sources raw: RawSource
+    register_transforms multiply: MultiplyTransform
+    register_destinations stdout: StdoutDestination
+
+    source :raw, 10
+    transform :multiply, 2
+    destination :stdout
+  end
+end
+MyJob.new.run # => puts 20
+
+```
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.

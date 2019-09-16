@@ -14,6 +14,45 @@ def check_features!
 end
 
 RSpec.describe 'Kiba::Tanmer::Job' do
+  before do
+    stub_const 'RawSource', (Class.new do
+      def initialize(raw)
+        @raw = raw
+      end
+
+      def each
+        yield @raw
+      end
+    end)
+
+    stub_const 'Enumerable', (Class.new do
+      def process(row)
+        row.each { |x| yield x }
+        nil
+      end
+    end)
+
+    stub_const 'MultiplyTransform', (Class.new do
+      def initialize(x)
+        @x = x
+      end
+
+      def process(row)
+        row * @x
+      end
+    end)
+
+    stub_const 'StoreDestination', (Class.new do
+      def initialize(store)
+        @store = store
+      end
+
+      def write(row)
+        @store << row
+      end
+    end)
+  end
+
   let(:etl_source) do
     <<-CODE
       checkpoints[:store] = []
@@ -67,66 +106,49 @@ RSpec.describe 'Kiba::Tanmer::Job' do
     check_features!
   end
 
-  context 'included from a Class with initialize' do
-    before do
-      stub_const 'RawSource', (Class.new do
-        def initialize(raw)
-          @raw = raw
-        end
+  context 'included from a Class' do
+    context 'register mappings from class' do
+      subject do
+        Class.new do
+          include Kiba::Tanmer::Job
 
-        def each
-          yield @raw
-        end
-      end)
+          register_sources raw: RawSource
+          register_transforms multiply: MultiplyTransform
+          register_transforms enumerable: Enumerable
+          register_destinations store: StoreDestination
 
-      stub_const 'Enumerable', (Class.new do
-        def process(row)
-          row.each { |x| yield x }
-          nil
-        end
-      end)
-
-      stub_const 'MultiplyTransform', (Class.new do
-        def initialize(x)
-          @x = x
-        end
-
-        def process(row)
-          row * @x
-        end
-      end)
-
-      stub_const 'StoreDestination', (Class.new do
-        def initialize(store)
-          @store = store
-        end
-
-        def write(row)
-          @store << row
-        end
-      end)
-    end
-    subject do
-      Class.new do
-        include Kiba::Tanmer::Job
-        define_etl do
-          checkpoints[:store] = []
-          source :raw, 1..3
-          transform :enumerable
-          transform :multiply, 20
-          destination :store, checkpoints[:store]
-        end
-
-        def initialize
-          super do |job|
-            job.register_sources raw: RawSource
-            job.register_transforms multiply: MultiplyTransform
-            job.register_transforms enumerable: Enumerable
-            job.register_destinations store: StoreDestination
+          define_etl do
+            checkpoints[:store] = []
+            source :raw, 1..3
+            transform :enumerable
+            transform :multiply, 20
+            destination :store, checkpoints[:store]
           end
-        end
-      end.new
+        end.new
+      end
+      check_features!
     end
-    check_features!
+
+    context 'register mappings from instance' do
+      subject do
+        Class.new do
+          include Kiba::Tanmer::Job
+
+          define_etl do
+            register_sources raw: RawSource
+            register_transforms multiply: MultiplyTransform
+            register_transforms enumerable: Enumerable
+            register_destinations store: StoreDestination
+
+            checkpoints[:store] = []
+            source :raw, 1..3
+            transform :enumerable
+            transform :multiply, 20
+            destination :store, checkpoints[:store]
+          end
+        end.new
+      end
+      check_features!
+    end
   end
 end

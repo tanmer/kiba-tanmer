@@ -25,6 +25,30 @@ module Kiba
         def defined_etl_block
           @defined_etl_block
         end
+
+        def sources_mapping
+          @sources_mapping ||= {}
+        end
+
+        def register_sources(hash)
+          sources_mapping.update(hash)
+        end
+
+        def transforms_mapping
+          @transforms_mapping ||= {}
+        end
+
+        def register_transforms(hash)
+          transforms_mapping.update(hash)
+        end
+
+        def destinations_mapping
+          @destinations_mapping ||= {}
+        end
+
+        def register_destinations(hash)
+          destinations_mapping.update(hash)
+        end
       end
 
       extend Forwardable
@@ -42,7 +66,11 @@ module Kiba
         context.config :kiba, runner: Kiba::StreamingRunner
         context.send :extend, Kiba::Common::DSLExtensions::Logger
         context.send :extend, Kiba::Common::DSLExtensions::ShowMe
-        yield self if block_given?
+
+        context.register_sources self.class.sources_mapping
+        context.register_transforms self.class.transforms_mapping
+        context.register_destinations self.class.destinations_mapping
+
         context.instance_eval(&self.class.defined_etl_block)
         self
       end
