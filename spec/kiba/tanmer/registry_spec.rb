@@ -1,32 +1,34 @@
 # frozen_string_literal: true
 
-class RawSource
-  def initialize(raw)
-    @raw = raw
+RSpec.describe Kiba::Tanmer::Registry do
+  before do
+    stub_const 'RawSource', (Class.new do
+      def initialize(raw)
+        @raw = raw
+      end
+
+      def each
+        yield @raw
+      end
+    end)
+
+    stub_const 'MultiplyTransform', (Class.new do
+      def process(x)
+        x * 2
+      end
+    end)
+
+    stub_const 'CollectinDestination', (Class.new do
+      def initialize(collector)
+        @collector = collector
+      end
+
+      def write(x)
+        @collector << x
+      end
+    end)
   end
 
-  def each
-    yield @raw
-  end
-end
-
-class MultiplyTransform
-  def process(x)
-    x * 2
-  end
-end
-
-class CollectinDestination
-  def initialize(collector)
-    @collector = collector
-  end
-
-  def write(x)
-    @collector << x
-  end
-end
-
-RSpec.describe 'Kiba::Tanmer::Registry' do
   it do
     store = []
     job = Kiba::Tanmer.parse do

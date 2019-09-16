@@ -42,6 +42,7 @@ module Kiba
         context.config :kiba, runner: Kiba::StreamingRunner
         context.send :extend, Kiba::Common::DSLExtensions::Logger
         context.send :extend, Kiba::Common::DSLExtensions::ShowMe
+        yield self if block_given?
         context.instance_eval(&self.class.defined_etl_block)
         self
       end

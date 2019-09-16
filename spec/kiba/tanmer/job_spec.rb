@@ -66,4 +66,67 @@ RSpec.describe 'Kiba::Tanmer::Job' do
     end
     check_features!
   end
+
+  context 'included from a Class with initialize' do
+    before do
+      stub_const 'RawSource', (Class.new do
+        def initialize(raw)
+          @raw = raw
+        end
+
+        def each
+          yield @raw
+        end
+      end)
+
+      stub_const 'Enumerable', (Class.new do
+        def process(row)
+          row.each { |x| yield x }
+          nil
+        end
+      end)
+
+      stub_const 'MultiplyTransform', (Class.new do
+        def initialize(x)
+          @x = x
+        end
+
+        def process(row)
+          row * @x
+        end
+      end)
+
+      stub_const 'StoreDestination', (Class.new do
+        def initialize(store)
+          @store = store
+        end
+
+        def write(row)
+          @store << row
+        end
+      end)
+    end
+    subject do
+      Class.new do
+        include Kiba::Tanmer::Job
+        define_etl do
+          checkpoints[:store] = []
+          source :raw, 1..3
+          transform :enumerable
+          transform :multiply, 20
+          destination :store, checkpoints[:store]
+        end
+
+        def initialize
+          super do |job|
+            job.register_sources raw: RawSource
+            job.register_transforms multiply: MultiplyTransform
+            job.register_transforms enumerable: Enumerable
+            job.register_destinations store: StoreDestination
+          end
+        end
+      end.new
+    end
+    check_features!
+  end
 end
